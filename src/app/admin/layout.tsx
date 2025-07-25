@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js'; // Import tipe User dari Supabase SDK
+import { User, Session } from '@supabase/supabase-js'; // Import User DAN Session dari Supabase SDK
+
+// Definisikan tipe untuk Subscription
+// Supabase Auth Helpers mengembalikan objek dengan properti `data.subscription`
+// yang memiliki metode `unsubscribe`.
+interface AuthSubscription {
+  unsubscribe: () => void;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,7 +22,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    let subscription: any = null;
+    // Perbaikan Baris 18: Ganti 'any' dengan tipe yang lebih spesifik
+    let subscription: AuthSubscription | null = null; 
 
     const checkUserAndRedirect = async () => {
       setErrorMessage(null);
@@ -50,12 +58,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     checkUserAndRedirect();
 
-    // Perubahan besar di sini: Menggunakan async/await di dalam callback onAuthStateChange
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => { // <-- Buat callback async
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session: Session | null) => { // Tipe Session bisa null
       if (!session) {
         router.push('/admin/login');
       } else {
-        try { // <-- Tambahkan try-catch block
+        try {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('role')
@@ -70,16 +77,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           } else {
             setUser(session.user);
           }
-        } catch (err: any) { // <-- Catch block untuk error Promise
+        } catch (err: unknown) { // Perbaikan Baris 73: Ganti 'any' dengan 'unknown'
           console.error("Error during auth state change profile check:", err);
+          // Anda bisa melakukan pengecekan tipe lebih lanjut di sini jika perlu, misal:
+          // if (err instanceof Error) {
+          //   setErrorMessage(`An unexpected error occurred during authorization check: ${err.message}`);
+          // } else {
+          //   setErrorMessage("An unexpected error occurred during authorization check.");
+          // }
           setErrorMessage("An unexpected error occurred during authorization check.");
-          await supabase.auth.signOut(); // Pastikan async/await di sini juga
+          await supabase.auth.signOut();
           router.push('/admin/login');
         }
       }
     });
 
-    subscription = authListener.subscription;
+    subscription = authListener.subscription; // Tetap sama, karena tipe subscription sudah diperbaiki
 
     return () => {
       if (subscription) {
