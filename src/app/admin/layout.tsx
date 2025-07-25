@@ -5,12 +5,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link'; // Import Link
 import { AuthError } from '@supabase/supabase-js'; // Import AuthError for error handling
+import { User } from '@supabase/supabase-js'; 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null); // State untuk menyimpan user
+  const [user, setUser] = useState<User | null>(null); // State untuk menyimpan user
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const checkUserAndRedirect = async () => {
