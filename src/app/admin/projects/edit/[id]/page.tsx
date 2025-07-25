@@ -2,11 +2,15 @@
 
 import EditProjectForm from '@/components/EditProjectForm';
 
-// Jangan gunakan `PageProps` dari next/router.
-// App Router akan langsung menyuplai `params` secara otomatis.
+interface Params {
+  params: {
+    id: string;
+  };
+}
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+// Jangan pakai `async` kalau tidak fetch data server-side
+export default function EditProjectPage({ params }: Params) {
+  const { id } = params;
 
   if (!id) {
     return (
