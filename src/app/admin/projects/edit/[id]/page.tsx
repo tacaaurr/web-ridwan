@@ -1,26 +1,34 @@
 // src/app/admin/projects/edit/[id]/page.tsx
 
-import { getProjectById } from "@/lib/api";
-import FormProject from "@/components/EditProjectForm";
-import { notFound } from "next/navigation";
+import EditProjectForm from '@/components/EditProjectForm';
 
-type PageProps = {
+interface EditPageParams {
   params: {
     id: string;
   };
-};
+  // searchParams?: { [key: string]: string | string[] | undefined }; // Opsional: Jika Anda perlu search params
+}
 
-export default async function EditProjectPage({ params }: PageProps) {
-  const project = await getProjectById(params.id);
+// Gunakan `async` di sini. Ini adalah Server Component.
+export default async function EditProjectPage({ params }: EditPageParams) {
+  const { id } = params;
 
-  if (!project) {
-    return notFound();
+  if (!id) {
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-4xl font-bold text-red-500">Error: Project ID Missing</h1>
+        <p className="text-lg text-gray-700 mt-4">Please go back to the projects list.</p>
+        <a
+          href="/admin/projects"
+          className="mt-6 inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+        >
+          Back to Projects
+        </a>
+      </div>
+    );
   }
 
-  return (
-    <main className="max-w-3xl mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-4">Edit Project</h1>
-      <FormProject project={project} />
-    </main>
-  );
+  // Render Client Component dan passing ID sebagai prop
+  // Pastikan `src/components/EditProjectForm.tsx` sudah ada dan benar.
+  return <EditProjectForm projectId={id} />;
 }
