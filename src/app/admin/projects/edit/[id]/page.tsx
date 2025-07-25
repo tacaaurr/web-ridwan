@@ -12,7 +12,7 @@ import Image from 'next/image';
 // import type { PageProps } from 'next/navigation'; // <--- HAPUS BARIS INI
 
 // Ubah komponen ini menjadi async function component dan tentukan tipe params secara langsung
-export default async function EditProjectPage({ params }: { params: { id: string } }) { // <-- Perubahan di sini
+export default function EditProjectPage({ params }: { params: { id: string } }) { // Hapus 'async' di sini
   // params akan langsung berupa objek karena ini Client Component,
   // tapi penulisan async dan tipe inline membantu validasi tipe di build time.
   const { id } = params;
