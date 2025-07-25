@@ -1,15 +1,18 @@
 // src/app/admin/projects/edit/[id]/page.tsx
 // Ini adalah Server Component. Tidak ada 'use client'!
-import EditProjectForm from '@/components/EditProjectForm'; // Impor komponen baru
 
-// Next.js secara otomatis memberikan `params` ke fungsi `generateMetadata`
-// dan ke fungsi komponen `page` itu sendiri.
-// Di Server Component, `params` adalah objek biasa yang dapat diakses langsung.
-export default async function EditProjectPage({ params }: { params: { id: string } }) {
+import EditProjectForm from '@/components/EditProjectForm';
+
+type Props = {
+  params: {
+    id: string;
+  };
+};
+
+export default async function EditProjectPage({ params }: Props) {
   const { id } = params;
 
   if (!id) {
-    // Tangani kasus jika ID tidak ditemukan (misal: redirect ke halaman error atau daftar proyek)
     return (
       <div className="text-center py-12">
         <h1 className="text-4xl font-bold text-red-500">Error: Project ID Missing</h1>
@@ -21,6 +24,5 @@ export default async function EditProjectPage({ params }: { params: { id: string
     );
   }
 
-  // Render Client Component dan passing ID sebagai prop
   return <EditProjectForm projectId={id} />;
 }
