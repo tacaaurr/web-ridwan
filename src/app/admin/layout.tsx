@@ -1,74 +1,99 @@
 // src/app/admin/layout.tsx
 'use client';
-import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link'; // Import Link
-import { AuthError } from '@supabase/supabase-js'; // Import AuthError for error handling
-import { User } from '@supabase/supabase-js'; 
+import { useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js'; // Import tipe User dari Supabase SDK
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null); // State untuk menyimpan user
+  const [user, setUser] = useState<User | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkUserAndRedirect = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error || !session) {
-        router.push('/admin/login');
-      } else {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+    let subscription: any = null;
 
-        if (profileError || profileData?.role !== 'admin') {
-          console.error("User is not an admin or profile not found:", profileError);
-          await supabase.auth.signOut();
+    const checkUserAndRedirect = async () => {
+      setErrorMessage(null);
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        if (pathname !== '/admin/login') {
           router.push('/admin/login');
-        } else {
-          setUser(session.user); // Set user jika admin
         }
+        setLoading(false);
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError || profileData?.role !== 'admin') {
+        console.error("User is not an admin or profile not found:", profileError || "No profile data or role is not admin.");
+        setErrorMessage("You are not authorized to access this dashboard. Logging out...");
+        await supabase.auth.signOut();
+        router.push('/admin/login');
+        setLoading(false);
+        return;
+      } else {
+        setUser(session.user);
       }
       setLoading(false);
     };
 
     checkUserAndRedirect();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Perubahan besar di sini: Menggunakan async/await di dalam callback onAuthStateChange
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => { // <-- Buat callback async
       if (!session) {
         router.push('/admin/login');
       } else {
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data: profileData, error: profileError }) => {
-            if (profileError || profileData?.role !== 'admin') {
-              console.error("User role check failed on state change:", profileError);
-              supabase.auth.signOut();
-              router.push('/admin/login');
-            } else {
-              setUser(session.user);
-            }
-          });
+        try { // <-- Tambahkan try-catch block
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError || profileData?.role !== 'admin') {
+            console.error("User role check failed on state change:", profileError || "No profile data or role is not admin.");
+            setErrorMessage("Your authorization status changed. Logging out...");
+            await supabase.auth.signOut();
+            router.push('/admin/login');
+          } else {
+            setUser(session.user);
+          }
+        } catch (err: any) { // <-- Catch block untuk error Promise
+          console.error("Error during auth state change profile check:", err);
+          setErrorMessage("An unexpected error occurred during authorization check.");
+          await supabase.auth.signOut(); // Pastikan async/await di sini juga
+          router.push('/admin/login');
+        }
       }
     });
+
+    subscription = authListener.subscription;
 
     return () => {
       if (subscription) {
         subscription.unsubscribe();
       }
     };
-  }, [router]);
+  }, [router, pathname]);
 
-  // Ini penting! Kalau loading true, tampilkan loading.
-  // Kalau loading false DAN user tidak ada (misal redirecting), jangan tampilkan apa-apa sementara.
+  const handleLogout = async () => {
+    setLoading(true);
+    await supabase.auth.signOut();
+    router.push('/admin/login');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -77,33 +102,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Ini juga penting! Jika user belum terautentikasi atau bukan admin
-  // dan redirecting, kita tidak perlu me-render konten kosong.
-  // Layout akan menunggu sampai user valid atau redirect selesai.
-  if (!user && pathname !== '/admin/login') { // Tambahkan kondisi agar form login tetap terlihat
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline ml-2">{errorMessage}</span>
+          <p className="mt-2 text-sm">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pathname === '/admin/login') {
+    return children;
+  }
+
+  if (!user) {
     return null;
   }
 
-  // Render login form jika di halaman login, tanpa sidebar
-  if (pathname === '/admin/login') {
-    return children; // Hanya render children (login page)
-  }
-
-  const handleLogout = async () => {
-    try {
-      const { error }: { error: AuthError | null } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Error during logout:', error.message);
-      } else {
-        router.push('/admin/login');
-      }
-    } catch (err) {
-      console.error('Unexpected error during logout:', err);
-    }
-  };
-
-  // Render dashboard dengan sidebar jika sudah login sebagai admin
-  // Render dashboard dengan sidebar jika sudah login sebagai admin
   return (
     <div className="flex min-h-screen bg-gray-100">
       <aside className="w-64 bg-gray-800 text-white flex flex-col p-6">

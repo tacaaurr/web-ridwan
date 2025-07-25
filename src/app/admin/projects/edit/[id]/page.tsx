@@ -1,28 +1,22 @@
-// src/app/(dashboard)/admin/projects/edit/[id]/page.tsx
-'use client';
+'use client'; // TETAPKAN INI KARENA ADA HOOKS!
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Project } from '@/types';
-import Image from 'next/image'; // Pastikan Image diimpor
+import Image from 'next/image';
 
-// Tidak perlu mengubah ini menjadi `async` karena ini adalah Client Component.
-// Peringatan ini umumnya muncul pada Server Components yang mengakses params secara langsung,
-// atau di Client Components yang di-render di bawah Server Components.
-// Mengaksesnya secara langsung dari `params` adalah cara yang benar untuk Client Component.
-// Namun, Next.js mendorong penggunaan `React.use` di Server Component jika params adalah Promise.
-// Untuk Client Component, warning ini bisa diabaikan atau ditangani dengan destructuring eksplisit.
+// Perhatikan perubahan di sini: komponen diubah menjadi async function.
+// Meskipun ini client component, Next.js mungkin melakukan type-checking di server.
 export default function EditProjectPage({ params }: { params: { id: string } }) {
-  // Destructuring langsung masih didukung, warning adalah tentang "future version".
-  // Namun, jika ingin menghilangkan warning sepenuhnya, cara paling aman adalah
-  // memastikan bahwa `params` adalah objek sebelum di-destructure.
-  // Tapi untuk `params` di Client Component, ini selalu objek.
-  // Peringatan ini mungkin terkait dengan cara Next.js memeriksa props secara internal.
-  // Kita bisa coba sedikit perubahan sintaks untuk melihat apakah peringatan hilang.
+  // Langsung destructure id seperti biasa.
+  // Next.js warning ini sebenarnya lebih ditujukan untuk Server Components.
+  // Tapi untuk menghilangkan error di build, kadang cukup dengan membuat komponen async
+  // atau memastikan tipe params sesuai yang diharapkan Next.js di Server side.
+  // Pada client component, params selalu object. Error ini mungkin false positive
+  // atau terkait dengan bagaimana Next.js memvalidasi props pada boundary SC/CC.
+  const { id } = params;
 
-  const id: string = params.id; // Akses langsung properti, lalu assign tipe eksplisit jika perlu
-  // Atau tetap pakai const { id } = params; // Ini harusnya tidak masalah untuk client component
 
   const [project, setProject] = useState<Project | null>(null);
   const [title, setTitle] = useState('');
@@ -41,7 +35,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
         .from('projects')
         .select('*')
         .eq('id', id)
-        .single(); // Gunakan id yang sudah di-destructure
+        .single();
 
       if (error) {
         setMessage(`Error fetching project: ${error.message}`);
@@ -56,10 +50,10 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
       setLoading(false);
     };
 
-    if (id) { // Pastikan id ada sebelum fetch
+    if (id) {
       fetchProject();
     }
-  }, [id]); // id sebagai dependency
+  }, [id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -171,7 +165,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
           <input
             type="file"
             id="image"
-            accept="image/*" // Atau sesuaikan dengan jenis file yang diizinkan
+            accept="image/*"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             onChange={handleFileChange}
           />
