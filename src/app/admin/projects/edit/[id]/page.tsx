@@ -1,22 +1,21 @@
-'use client'; // TETAPKAN INI KARENA ADA HOOKS!
+'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Pastikan ini diimpor
 import { supabase } from '@/lib/supabase';
 import { Project } from '@/types';
 import Image from 'next/image';
 
-// Perhatikan perubahan di sini: komponen diubah menjadi async function.
-// Meskipun ini client component, Next.js mungkin melakukan type-checking di server.
-export default function EditProjectPage({ params }: { params: { id: string } }) {
-  // Langsung destructure id seperti biasa.
-  // Next.js warning ini sebenarnya lebih ditujukan untuk Server Components.
-  // Tapi untuk menghilangkan error di build, kadang cukup dengan membuat komponen async
-  // atau memastikan tipe params sesuai yang diharapkan Next.js di Server side.
-  // Pada client component, params selalu object. Error ini mungkin false positive
-  // atau terkait dengan bagaimana Next.js memvalidasi props pada boundary SC/CC.
-  const { id } = params;
+// HAPUS BARIS IMPOR INI:
+// import type { PageProps } from 'next'; // <--- HAPUS BARIS INI
+// ATAU:
+// import type { PageProps } from 'next/navigation'; // <--- HAPUS BARIS INI
 
+// Ubah komponen ini menjadi async function component dan tentukan tipe params secara langsung
+export default async function EditProjectPage({ params }: { params: { id: string } }) { // <-- Perubahan di sini
+  // params akan langsung berupa objek karena ini Client Component,
+  // tapi penulisan async dan tipe inline membantu validasi tipe di build time.
+  const { id } = params;
 
   const [project, setProject] = useState<Project | null>(null);
   const [title, setTitle] = useState('');
