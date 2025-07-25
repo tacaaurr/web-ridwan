@@ -1,18 +1,23 @@
 // src/app/admin/projects/edit/[id]/page.tsx
+// PENTING: TIDAK ADA 'use client' DI SINI. Ini adalah Server Component.
 
-import EditProjectForm from '@/components/EditProjectForm';
+import EditProjectForm from '@/components/EditProjectForm'; // Impor Client Component yang baru dibuat
 
-interface EditPageParams {
+// Definisi interface untuk params. Ini setara dengan PageProps['params']
+interface EditPageProps {
   params: {
     id: string;
   };
-  // searchParams?: { [key: string]: string | string[] | undefined }; // Opsional: Jika Anda perlu search params
+  // searchParams?: { [key: string]: string | string[] | undefined }; // Opsional: Jika perlu search params
 }
 
-// Gunakan `async` di sini. Ini adalah Server Component.
-export default async function EditProjectPage({ params }: EditPageParams) {
+// Ini adalah Server Component. Next.js mengharapkan fungsi `page` menjadi async
+// jika menerima `params` atau melakukan data fetching di server.
+export default async function EditProjectPage({ params }: EditPageProps) {
   const { id } = params;
 
+  // Next.js akan memvalidasi tipe `params` ini di server.
+  // Jika `id` tidak ada (misalnya, URL diakses tanpa ID), tampilkan pesan error
   if (!id) {
     return (
       <div className="text-center py-12">
@@ -29,6 +34,6 @@ export default async function EditProjectPage({ params }: EditPageParams) {
   }
 
   // Render Client Component dan passing ID sebagai prop
-  // Pastikan `src/components/EditProjectForm.tsx` sudah ada dan benar.
+  // Server Component ini hanya bertugas mendapatkan ID dan meneruskannya ke Client Component
   return <EditProjectForm projectId={id} />;
 }
